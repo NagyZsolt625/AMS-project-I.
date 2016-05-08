@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MCX>
+	<ProjectLocation>
+		F:\_TIA_Projects\Mérnök\Mernokfutam_vegleges\IM\HMI\{11866113-5020}\D\HMI_HF7U
+	</ProjectLocation>
+	<ProjectIsConsistent>
+		1
+	</ProjectIsConsistent>
+	<SharedMcxLocation>
+		
+	</SharedMcxLocation>
+	<ProjectLocationUNC>
+		\\S7HWHU007\WinCC_Project_HMI_HF7U_1
+	</ProjectLocationUNC>
+	<RDP>
+	<LastModifiedDate>
+		2015-11-18 10:17:18
+	</LastModifiedDate>
+	</RDP>
+</MCX>
