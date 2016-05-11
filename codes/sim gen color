@@ -1,0 +1,72 @@
+
+//*****************************************************************
+// Initialize variables
+//
+IF #Init THEN
+    #Count := 0;
+    #WasBlue := 0;
+    #WasRed := 0;
+    #WasGreen := 0;
+END_IF;
+
+
+//*****************************************************************
+// Generate a color. All colors possible
+//
+IF #REQ AND NOT #req_fp THEN
+    
+    #Color := 0;
+    #color_ok := 0;
+    
+    WHILE #color_ok = 0 DO
+        
+        #readtime := TIME_TCK();
+        #Color := TIME_TO_BYTE(#readtime) AND 16#3;
+        
+        #color_ok := 1;
+        IF #Color = 0 THEN
+            #color_ok := 0;
+        ELSIF #Count = 5 AND(
+            (#Color = 1 AND (NOT #WasGreen OR NOT #WasRed)) OR
+            (#Color = 2 AND (NOT #WasBlue OR NOT #WasGreen)) OR
+            (#Color = 3 AND (NOT #WasBlue OR NOT #WasRed))
+            )THEN
+            #color_ok := 0;
+        ELSIF #Count = 4 AND (
+            (#Color = 1 AND (NOT #WasGreen AND NOT #WasRed)) OR
+            (#Color = 2 AND (NOT #WasBlue AND NOT #WasGreen)) OR
+            (#Color = 3 AND (NOT #WasBlue AND NOT #WasRed))
+            ) THEN
+            #color_ok := 0;
+        END_IF;
+        
+    END_WHILE;
+                
+    #Count := #Count + 1;
+                
+    CASE BYTE_TO_INT(#Color) OF
+        1:
+            #WasBlue := 1;
+        2:
+            #WasRed := 1;
+        3:
+            #WasGreen := 1;
+    END_CASE;
+            
+            
+            
+END_IF;
+
+#req_fp := #REQ;
+
+
+//*****************************************************************
+// Display color signals
+//
+IF #REQ THEN
+    #CS1 := #Color.%X0;
+    #CS2 := #Color.%X1;
+ELSE
+    #CS1 := 0;
+    #CS2 := 0;
+END_IF;
