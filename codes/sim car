@@ -1,0 +1,599 @@
+//*****************************************************************
+// Initialize variables
+//
+IF #Start AND NOT #start_fp THEN
+    
+    #cars_done := 0;
+    #cars_started := 0;
+    #cars_ok := 0;
+    #done_blue := 0;
+    #done_red := 0;
+    #done_green := 0;
+//    #strt.REQ := 1;
+//  
+    #S2 := 0;
+    #S6 := 0;
+    #S7 := 0;
+    #S8 := 0;
+    #h4_obj_exist := 0;
+    #h5_obj_exist := 0;
+
+    #m_1.M_obj := 0;
+    #m_2.M_obj := 0;
+    #m_3.M_obj := 0;
+    #m_4.M_obj := 0;
+    #m_5.M_obj := 0;
+    #m_6.M_obj := 0;
+    #m_7.M_obj := 0;
+    #m_8.M_obj := 0;
+    
+    
+    FOR #index := 1 TO 8 DO
+        #Error_cases.Motor[#index] := 0;
+    END_FOR;
+    
+    FOR #index := 1 TO 7 DO
+        #Error_cases.Henger[#index] := 0;
+    END_FOR;
+    
+    FOR #index := 1 TO 6 DO
+        #Error_cases.Kocsi[#index] := 0;
+    END_FOR;
+
+    FOR #index := 1 TO 6 DO
+        #Objects[#index].ID := 0;
+        #Objects[#index].PosX := 0;
+        #Objects[#index].PosY := 0;
+        #Objects[#index].Graphic := 0;
+    END_FOR;
+    
+    FOR #index := 1 TO 6 DO
+        #StockBlue[#index].ID := 0;
+    END_FOR;
+    
+    FOR #index := 1 TO 6 DO
+        #StockRed[#index].ID := 0;
+    END_FOR;
+    
+    FOR #index := 1 TO 6 DO
+        #StockGreen[#index].ID := 0;
+    END_FOR;
+    
+    #gen_color.Init := 1;
+    #gen_color.REQ := 0;
+    
+END_IF;
+
+
+IF NOT #Start THEN
+    GOTO END;
+END_IF;
+
+
+//*****************************************************************
+// Check if all cars started or created
+//
+#all_started := #cars_started >= #Cars_max;
+
+IF #cars_done >= #Cars_max THEN
+    #DONE := 1;
+    #Start := 0;
+ELSE
+    #DONE := 0;
+END_IF;
+
+
+//*****************************************************************
+// Generate delay to start an object
+//
+IF (#m_2.Obj_out AND NOT #all_started) OR
+    (#Start AND NOT #start_fp) THEN
+    
+    #strt.REQ := 1;
+    
+    #cars_started := #cars_started + 1;
+    
+END_IF;
+
+#strt();                // StartDelay instance
+
+IF #S1 THEN
+    #strt.REQ := 0;
+    #gen_color.Init := 0;
+END_IF;
+
+
+//*****************************************************************
+// Section M1
+//
+
+#m_1.Obj_in := #strt.Start;
+#m_1.M_req := #m_1.M_obj;
+
+#m_1(M_be := #M1,
+     PosEnd := #H1PosX - #M1PosX);                 // M1 instance
+
+#S1 := #m_1.M_obj AND #m_1.position >= 0 AND #m_1.position <= 5;
+
+IF #m_1.M_obj THEN
+    #m1_obj := #cars_started;
+    #Objects[#m1_obj].ID := #m1_obj;
+    #Objects[#m1_obj].PosX := #M1PosX + #m_1.position;
+    #Objects[#m1_obj].PosY := #M1PosY;
+    #Objects[#m1_obj].Graphic := #GreyCube;
+END_IF;
+
+
+//*****************************************************************
+// Section H1
+//
+IF #m_1.Obj_out THEN
+    #S2 := 1;
+    #h1_obj := #m1_obj;
+//    #m1_obj := 0;
+    #h1_done_press := 0;
+    #h1_req_press := 1;
+    
+END_IF;
+
+#h_1(H_ki := #H11,
+     H_be := #H12,
+     H_bent => #H1A,
+     H_kint => #H1F);
+
+#h_2(H_ki := #H2,
+     H_kint => #H2A,
+     H_bent => #H2F);
+
+#tmr_h1_err(IN := #h1_req_press AND (NOT #H11 OR NOT #H2),
+            PT := t#10ms);
+
+IF #tmr_h1_err.Q THEN
+    #Error_cases.Henger[1] := 1;
+    #m_2.Obj_in := 1;
+    #m2_obj := #h1_obj;
+END_IF;
+
+IF #S2 THEN
+    #Objects[#h1_obj].PosX := #H1PosX;
+    #Objects[#h1_obj].PosY := #H1PosY - #h_1.position;
+END_IF;
+
+#tmr_h1_done(IN := #H1F AND #H2A,
+             PT := t#1s800ms);
+
+IF #tmr_h1_done.ET >= t#2S200ms OR
+    (#H11 AND NOT #S2) THEN
+    
+    #Error_cases.Henger[1] := 1;
+END_IF;
+
+IF #H2 AND NOT #S2 THEN
+    #Error_cases.Henger[2] := 1;
+END_IF;
+
+
+IF #tmr_h1_done.Q AND #S2 THEN
+    #h1_done_press := 1;
+    #h1_req_press := 0;
+    #Objects[#h1_obj].Graphic := #GreyCar;
+    
+END_IF;
+
+IF (#S2 AND (#h1_done_press OR #M2)) AND #H1A AND #H2F THEN
+    #h1_done_press := 0;
+    #S2 := 0;
+    #m_2.Obj_in := 1;
+    #m_2.M_req := 1;
+    #m2_obj := #h1_obj;
+END_IF;
+
+// IF #m_2.Obj_in THEN
+//     #S2 := 0;
+// END_IF;
+
+
+//*****************************************************************
+// Section M2
+//
+#m_2(M_be := #M2,
+     PosEnd := #M3PosX - #M2PosX);
+
+IF #m_2.M_obj THEN
+    #Objects[#m2_obj].PosX := #M2PosX + #m_2.position;
+    #Objects[#m2_obj].PosY := #M1PosY;
+END_IF;
+
+#m_3.Obj_in := #m_2.Obj_out;
+IF #m_2.Obj_out THEN
+    #m3_obj := #m2_obj;
+    #m_2.Obj_in := 0;
+END_IF;
+
+
+//*****************************************************************
+// Section M3
+//
+#m_3(M_be := #M3,
+     PosEnd := #M4PosX - #M3PosX);
+
+IF #m_3.M_obj THEN
+    #Objects[#m3_obj].PosX := #M3PosX + #m_3.position;
+    #Objects[#m3_obj].PosY := #M1PosY;
+END_IF;
+    
+#S3 := #m_3.M_obj AND #m_3.position >= 0 AND #m_3.position <= 10;
+
+IF #S3 AND NOT #H3F THEN
+    #h3_req_color := 1;
+    #m_3.M_tilt := 1;
+    #gen_color.REQ := 1;
+END_IF;
+
+#h_3(H_ki := #H3,
+     H_bent => #H3F,
+     H_kint => #H3A);
+
+#tmr_h3_done(IN := #H3A AND #h3_req_color,
+             PT := t#1s800ms);
+
+IF #tmr_h3_done.Q THEN
+    #h3_done_color := 1;
+    #h3_req_color := 0;
+//    #gen_color.REQ := 1;
+END_IF;
+
+IF #h3_done_color AND #H3F THEN
+    #m_3.M_tilt := 0;
+END_IF;
+
+#gen_color();
+
+IF #tmr_h3_done.Q THEN
+    IF #Objects[#m3_obj].Graphic = 0 THEN
+        #Objects[#m3_obj].Graphic := 4 + #gen_color.Color;
+    ELSE
+        #Objects[#m3_obj].Graphic := 1 + #gen_color.Color;
+    END_IF;
+END_IF;
+
+#m_4.Obj_in := #m_3.Obj_out;
+IF #m_3.Obj_out THEN
+    #m4_obj := #m3_obj;
+    #m_3.Obj_in := 0;
+END_IF;
+
+
+//*****************************************************************
+// Section M4
+//
+#m_4(M_be := #M4,
+     PosEnd := #H4PosX - #M4PosX);
+
+IF #m_4.M_obj THEN
+    #Objects[#m4_obj].PosX := #M4PosX + #m_4.position;
+    #Objects[#m4_obj].PosY := #M1PosY;
+END_IF;
+
+IF #m_4.M_obj AND #m_4.position > 80 AND #m_4.position < 120 THEN
+    #CS1 := #gen_color.CS1;
+    #CS2 := #gen_color.CS2;
+ELSE
+    #CS1 := 0;
+    #CS2 := 0;
+END_IF;
+
+IF #m_4.Obj_out THEN
+    #S4 := 1;
+    #h4_obj := #m4_obj;
+    #h4_obj_exist := 1;
+    #m_4.Obj_in := 0;
+    #gen_color.REQ := 0;
+    #h3_done_color := 0;
+END_IF;
+
+    
+//*****************************************************************
+// Section H4
+//    
+#h_4(H_ki := #H41,
+     H_be := #H42,
+     H_kint => #H4F,
+     H_bent => #H4A);
+
+#S4 := #h4_obj_exist;
+
+IF #h4_obj_exist = 1 THEN
+    #Objects[#h4_obj].PosX := #H4PosX;
+    #Objects[#h4_obj].PosY := #M1PosY - #h_4.position * (#M1PosY - #M6PosY) / 100;
+END_IF;
+
+IF #h4_obj_exist AND #h_5.position > 0 THEN
+    IF #Objects[#h4_obj].PosY < #M6PosY + 120 AND
+        #Objects[#h4_obj].PosY > #M6PosY THEN
+        
+        #h4_obj_exist := 0;
+        #Objects[#h4_obj].ID := 0;
+        #cars_done := #cars_done + 1;
+        #Error_cases.Henger[5] := 1;
+    END_IF;
+END_IF;
+    
+IF #h4_obj_exist AND #H4F THEN
+    #h4_obj_exist := 0;
+    #h5_obj_exist := 1;
+    #h5_obj := #h4_obj;
+END_IF;
+    
+    
+//*****************************************************************
+// Section M5
+//    
+IF #S4 AND NOT #H41 AND #M5 THEN
+    #m_5.Obj_in := 1;
+    #m5_obj := #h4_obj;
+    #h4_obj_exist := 0;
+END_IF;
+
+#m_5(M_be := #M5,
+     PosEnd := #S6PosX - #M5PosX);
+
+IF #m_5.M_obj THEN
+    #Objects[#m5_obj].PosX := #M5PosX + #m_5.position;
+    #Objects[#m5_obj].PosY := #M1PosY;
+END_IF;
+
+IF #m_5.Obj_out THEN
+    #tmr_s6_in := 1;
+    #S6 := 1;
+    #m_5.Obj_in := 0;
+END_IF;
+
+#tmr_s6(IN := #tmr_s6_in,
+        PT := t#2s);
+
+
+//*****************************************************************
+// Section Stock blue
+// 
+IF #S6 AND #tmr_s6.Q THEN
+    
+    #cars_done := #cars_done + 1;
+    #done_blue := #done_blue + 1;
+    #StockBlue[#done_blue].ID := 1;
+        
+        IF #Objects[#m5_obj].Graphic <> #BlueCar THEN
+            #Error_cases.Kocsi[#m5_obj] := 1;
+        ELSE
+            #cars_ok := #cars_ok + 1;
+        END_IF;
+        
+    #StockBlue[#done_blue].Graphic := #Objects[#m5_obj].Graphic;
+    #Objects[#m5_obj].ID := 0;
+    #tmr_s6_in := 0;
+    #S6 := 0;
+    
+END_IF; // End of line for blue cars
+
+
+//*****************************************************************
+// Section H5
+// 
+#h_5(H_ki := #H5,
+     H_kint => #H5V);
+
+IF #h5_obj_exist THEN
+    #Objects[#h5_obj].PosX := #H4PosX + #h_5.position * (#M6PosX - #H4PosX) / 100;
+    #Objects[#h5_obj].PosY := #M6PosY;
+END_IF;
+
+IF #h5_obj_exist AND #H5V THEN
+    #h5_obj_exist := 0;
+    #m6_obj := #h5_obj;
+    #m_6.Obj_in := 1;
+END_IF;
+
+
+//*****************************************************************
+// Section M6
+// 
+#m_6(M_be := #M6,
+     PosEnd := #H6PosX - #M6PosX);
+
+IF #m_6.M_obj THEN
+    #Objects[#m6_obj].PosX := #M6PosX + #m_6.position;
+    #Objects[#m6_obj].PosY := #M6PosY;
+END_IF;
+
+IF #m_6.Obj_out THEN
+    #m_6.Obj_in := 0;
+    #h6_obj := #m6_obj;
+    #h6_obj_exist := 1;
+END_IF;
+
+
+//*****************************************************************
+// Section H6
+//    
+#h_6(H_ki := #H61,
+     H_be := #H62,
+     H_kint => #H6F,
+     H_bent => #H6A);
+
+#S5 := #h6_obj_exist;
+
+IF #h6_obj_exist = 1 THEN
+    #Objects[#h6_obj].PosX := #H6PosX;
+    #Objects[#h6_obj].PosY := #M6PosY - #h_6.position * (#M6PosY - #M8PosY) / 100;
+END_IF;
+
+IF #h6_obj_exist AND #h_7.position > 0 THEN
+    IF #Objects[#h6_obj].PosY < #M8PosY + 120 AND
+        #Objects[#h6_obj].PosY > #M8PosY THEN
+        #h6_obj_exist := 0;
+        #Objects[#h6_obj].ID := 0;
+        #cars_done := #cars_done + 1;
+        #Error_cases.Henger[7] := 1;
+    END_IF;
+END_IF;
+
+IF #h6_obj_exist AND #H6F THEN
+    #h6_obj_exist := 0;
+    #h7_obj_exist := 1;
+    #h7_obj := #h6_obj;
+END_IF;
+
+
+//*****************************************************************
+// Section M7
+//    
+IF #S5 AND NOT #H61 AND #M7 THEN
+    #m_7.Obj_in := 1;
+    #m7_obj := #h6_obj;
+    #h6_obj_exist := 0;
+END_IF;
+
+#m_7(M_be := #M7,
+     PosEnd := #S6PosX - #M7PosX);
+
+IF #m_7.M_obj THEN
+    #Objects[#m7_obj].PosX := #M7PosX + #m_7.position;
+    #Objects[#m7_obj].PosY := #M6PosY;
+END_IF;
+
+IF #m_7.Obj_out THEN
+    #tmr_s7_in := 1;
+    #S7 := 1;
+    #m_7.Obj_in := 0;
+END_IF;
+
+#tmr_s7(IN := #tmr_s7_in,
+        PT := t#2s);
+
+
+//*****************************************************************
+// Section Stock red
+// 
+IF #S7 AND #tmr_s7.Q THEN
+    
+    #cars_done := #cars_done + 1;
+    #done_red := #done_red + 1;
+    #StockRed[#done_red].ID := 1;
+        
+        IF #Objects[#m7_obj].Graphic <> #RedCar THEN
+            #Error_cases.Kocsi[#m7_obj] := 1;
+        ELSE
+            #cars_ok := #cars_ok + 1;
+        END_IF;
+        
+    #StockRed[#done_red].Graphic := #Objects[#m7_obj].Graphic;
+    #Objects[#m7_obj].ID := 0;
+    #tmr_s7_in := 0;
+    #S7 := 0;
+    
+END_IF; // End of line for red cars
+
+
+//*****************************************************************
+// Section H7
+// 
+#h_7(H_ki := #H7,
+     H_kint => #H7V);
+
+IF #h7_obj_exist THEN
+    #Objects[#h7_obj].PosX := #H6PosX + #h_7.position * (#M8PosX - #H6PosX) / 100;
+    #Objects[#h7_obj].PosY := #M8PosY;
+END_IF;
+
+IF #h7_obj_exist AND #H7V THEN
+    #h7_obj_exist := 0;
+    #m8_obj := #h7_obj;
+    #m_8.Obj_in := 1;
+END_IF;
+
+
+//*****************************************************************
+// Section M8
+//    
+#m_8(M_be := #M8,
+     PosEnd := #S6PosX - #M8PosX);
+
+IF #m_8.M_obj THEN
+    #Objects[#m8_obj].PosX := #M8PosX + #m_8.position;
+    #Objects[#m8_obj].PosY := #M8PosY;
+END_IF;
+
+IF #m_8.Obj_out THEN
+    #tmr_s8_in := 1;
+    #S8 := 1;
+    #m_8.Obj_in := 0;
+END_IF;
+
+#tmr_s8(IN := #tmr_s8_in,
+        PT := t#2s);
+
+
+//*****************************************************************
+// Section Stock green
+// 
+IF #S8 AND #tmr_s8.Q THEN
+    
+    #cars_done := #cars_done + 1;
+    #done_green := #done_green + 1;
+    #StockGreen[#done_green].ID := 1;
+    
+    IF #Objects[#m8_obj].Graphic <> #GreenCar THEN
+        #Error_cases.Kocsi[#m8_obj] := 1;
+    ELSE
+        #cars_ok := #cars_ok + 1;
+    END_IF;
+        
+    #StockGreen[#done_green].Graphic := #Objects[#m8_obj].Graphic;
+    #Objects[#m8_obj].ID := 0;
+    #tmr_s8_in := 0;
+    #S8 := 0;
+    
+END_IF; // End of line for green cars
+
+
+//*****************************************************************
+// Display error cases
+// 
+IF #m_1.Error_lite OR #m_1.Error_fatal THEN
+    #Error_cases.Motor[1] := 1;
+END_IF;
+
+IF #m_2.Error_lite OR #m_2.Error_fatal THEN
+    #Error_cases.Motor[2] := 1;
+END_IF;
+
+IF #m_3.Error_lite OR #m_3.Error_fatal THEN
+    #Error_cases.Motor[3] := 1;
+END_IF;
+
+IF #m_4.Error_lite OR #m_4.Error_fatal THEN
+    #Error_cases.Motor[4] := 1;
+END_IF;
+
+IF #m_5.Error_lite OR #m_5.Error_fatal THEN
+    #Error_cases.Motor[5] := 1;
+END_IF;
+
+IF #m_6.Error_lite OR #m_6.Error_fatal THEN
+    #Error_cases.Motor[6] := 1;
+END_IF;
+
+IF #m_7.Error_lite OR #m_7.Error_fatal THEN
+    #Error_cases.Motor[7] := 1;
+END_IF;
+
+IF #m_8.Error_lite OR #m_8.Error_fatal THEN
+    #Error_cases.Motor[1] := 1;
+END_IF;
+
+
+//*****************************************************************
+// Update edge variables
+//
+END:
+#start_fp := #Start;
