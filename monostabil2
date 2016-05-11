@@ -1,0 +1,54 @@
+//*****************************************************************
+// Delay for incrementing/decrementing position
+//
+#tmr1(IN := #tmr_start,
+      PT := #Tbase);
+ 
+#tmr_start := NOT #tmr1.Q;
+ 
+ 
+//*****************************************************************
+// Increment position
+//
+IF #H_ki AND NOT #H_kint AND #tmr1.Q AND #position < #PosEnd THEN
+ 
+        #position := #position + 1;
+       
+END_IF;
+ 
+ 
+//*****************************************************************
+// Decrement position
+//
+IF NOT #H_ki AND #tmr1.Q AND #position > 0 THEN
+ 
+        #position := #position - 1;
+ 
+END_IF;
+ 
+ 
+//*****************************************************************
+// Handle the end sensors
+//
+#H_kint := #position >= #PosEnd;
+#H_bent := #position <= 0;
+ 
+ 
+//*****************************************************************
+// Handle error cases
+//
+IF  #H_ki AND #H_kint  THEN
+   
+    #err_rq := 1;
+ELSE
+    #err_rq := 0;
+   
+END_IF;
+ 
+ 
+//*****************************************************************
+// Delay for displaying error
+//
+#tmr2(IN := #err_rq,
+      PT := #Err_delay,
+      Q => #Error);
