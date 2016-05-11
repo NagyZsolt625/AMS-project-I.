@@ -1,0 +1,255 @@
+
+IF #TR THEN
+    
+    #C0 := #ctomb[#indexb].%X0;
+    #C1 := #ctomb[#indexb].%X1;
+    #C2 := #ctomb[#indexb].%X2;
+    
+END_IF;
+
+IF NOT (#TR) AND #tr_prev THEN
+    
+    #indexb := #indexb + 1;
+    IF #indexb > 6 THEN
+        #indexb := 0;
+    END_IF;
+    
+END_IF;
+
+#tr_prev := #TR;
+
+// IF #TR THEN
+
+//     #C0 := #ctomb[#index].%X0;
+//     #C1 := #ctomb[#index].%X1;
+//     #C2 := #ctomb[#index].%X2;
+
+// END_IF;
+
+// IF NOT (#TR) AND #tr_prev THEN
+
+//     #index := #index + 1;
+
+// END_IF;
+
+// #tr_prev := #TR;
+
+CASE #index OF
+    
+    0:
+        #H12 := TRUE;
+        #H42 := TRUE;
+        #H62 := TRUE;
+    IF #S1 THEN
+      
+      #index := 1;
+      
+    END_IF;
+    
+  1:
+    #M1 := true;
+    IF #S2 THEN
+      #index := 2;
+    END_IF;
+    
+  2:
+    
+    
+    // IF #S2 AND NOT (#press) THEN
+    
+    #M1 := false;
+    #H11 := true;
+    #H12 := false;
+    #H2 := true;
+    #press := true;
+    
+    //END_IF;
+    
+    
+    IF #H2A AND #H1F THEN
+      #index := 3;
+      
+      
+    END_IF;
+  3:
+    #Simple_Wait_Time_v1_Instance(min_wait_time := t#3s,
+                                  done => #wait1);
+    
+    IF #wait1 THEN
+      #index := 4;
+      
+      
+    END_IF;
+  4:
+    #H2 := false;
+    #H11 := false;
+    #H12 := true;
+    
+    IF #H2F AND #H1A THEN
+      
+      #index := 5;
+      
+      
+    END_IF;
+  5:
+    #M2 := true;
+    // #press := false;
+    
+    IF #S3 THEN
+      #index := 6;
+    END_IF;
+  6:
+    #M2 := false;
+    #H3 := true;
+    
+    // IF #S3 AND NOT (#paint) THEN
+    
+    //     #M2 := false;
+    //     #H3 := true;
+    //     #paint := true;
+    
+    // END_IF;
+    
+    IF #H3A THEN
+      #index := 7;
+      
+      
+      
+    END_IF;
+  7:
+    #Simple_Wait_Time_v1_Instance_1(min_wait_time := t#3s,
+                                    done => #wait2);
+    
+    IF #wait2 THEN
+      #index := 8;
+      
+      
+      
+    END_IF;
+  8:
+    #H3 := false;
+    
+    IF #H3F THEN
+      #index := 9;
+      
+      
+      
+    END_IF;
+  9:
+    #M3 := true;
+    #M4 := true;
+    //#paint := false;
+    
+    IF #CS1 OR #CS2 THEN
+      
+      #color.%X0 := #CS1;
+      #color.%X1 := #CS2;
+      
+    END_IF;
+    
+    IF #S4 THEN
+        
+        #M3 := false;
+        #M4 := false;
+      CASE #color OF
+          
+        2, 3:
+          #index := 11;
+          
+        1:
+          #index := 10;
+          
+      END_CASE;
+      
+    END_IF;
+    
+  10:
+    #M5 := true;
+    
+    IF #S6 THEN
+      #index := 0;
+      #M5 := false;
+      
+    END_IF;
+    
+  11:
+    #H41 := true;
+    #H42 := false;
+    
+    IF #H4F THEN
+      #index := 12;
+      
+    END_IF;
+    
+  12:
+    #H5 := true;
+    
+    IF #H5V THEN
+      #index := 13;
+      
+      
+    END_IF;
+    
+  13:
+    #M6 := true;
+    #H5 := false;
+    #H41 := false;
+    #H42 := true;
+    
+    IF #S5 THEN
+        #M6 := false;
+      CASE #color OF
+          
+        2:
+          #index := 14;
+          
+        3:
+          #index := 15;
+          
+          
+      END_CASE;
+      
+    END_IF;
+    
+  14:
+    #M7 := true;
+    
+    IF #S7 THEN
+      #index := 0;
+      #M7 := false;
+      
+    END_IF;
+  15:
+    #H61 := true;
+    #H62 := false;
+    
+    IF #H6F THEN
+      #index := 16;
+      
+      
+    END_IF;
+    
+  16:
+    #H7 := true;
+    
+    IF #H7V THEN
+      #index := 17;
+      
+      
+    END_IF;
+    
+  17:
+    #M8 := true;
+    #H7 := false;
+    #H61 := false;
+    #H62 := true;
+    
+    IF #S8 THEN
+      
+      #M8 := false;
+      #index := 0;
+    END_IF;
+    
+    
+END_CASE;
+
